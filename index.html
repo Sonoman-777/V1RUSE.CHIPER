@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>V1RU$E</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: monospace;
+            background: #000;
+            margin: 0;
+            padding: 28px 14px 36px;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #FF1F6B;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        button, textarea, input { touch-action: manipulation; }
+
+        h1 { margin: 16px 0 6px; font-size: 2.4rem; text-shadow: 0 0 14px currentColor; }
+        .accent-text { color: #FF1F6B; text-shadow: 0 0 10px #FF1F6B; }
+
+        .top-symbol { margin: 24px 0 4px; }
+        .top-symbol img { height: 100px; width: auto; image-rendering: crisp-edges; filter: drop-shadow(0 0 8px #FF1F6B); }
+
+        #infoBtn {
+            position: fixed; top: 18px; right: 18px; z-index: 1000;
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 2px solid #FF1F6B; background: transparent;
+            color: #FF1F6B; font-size: 19px; font-weight: bold;
+            cursor: pointer; transition: all 0.25s;
+            display: flex; align-items: center; justify-content: center; font-family: monospace;
+        }
+        #infoBtn:hover { background: #FF1F6B; color: #000; box-shadow: 0 0 14px rgba(255,31,107,0.5); }
+
+        #infoModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        #infoModal.open { opacity: 1; visibility: visible; }
+        #infoModal .modal-box {
+            background: #0a0a0a; border: 2px solid #FF1F6B; border-radius: 12px;
+            padding: 30px 26px; max-width: 540px; width: 90%; text-align: left;
+            font-size: 14px; line-height: 1.8; color: #ddd;
+            box-shadow: 0 0 30px rgba(255,31,107,0.3); max-height: 80vh; overflow-y: auto;
+        }
+        #infoModal .modal-box h3 { color: #FF1F6B; margin: 0 0 14px; font-size: 21px; }
+        #infoModal .modal-box b { color: #FF1F6B; }
+        #infoModal .modal-close {
+            display: block; margin: 22px auto 0; padding: 10px 26px;
+            border: 2px solid #FF1F6B; background: transparent; color: #FF1F6B;
+            border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.25s;
+        }
+        #infoModal .modal-close:hover { background: #FF1F6B; color: #000; }
+
+        .nav-chain {
+            display: flex; gap: 10px; align-items: center; font-size: 13px;
+            margin: 12px 0 8px; flex-wrap: wrap; justify-content: center;
+        }
+        .nav-chain .step { color: #555; cursor: default; transition: color 0.3s; }
+        .nav-chain .step.done { color: #FF1F6B; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+        .nav-chain .step.active { color: #fff; font-weight: bold; text-shadow: 0 0 6px #fff; }
+        .nav-chain .arrow { color: #333; }
+
+        #neuronCanvas {
+            display: block;
+            width: 100%;
+            max-width: 920px;
+            height: 320px;
+            margin: 12px auto;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 26px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-field { width: 100%; max-width: 580px; margin: 0 auto; }
+
+        textarea, .input-field input {
+            width: 100%;
+            background: #0a0a0a;
+            color: #FF1F6B;
+            border: 2px solid #FF1F6B;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 18px;
+            box-shadow: inset 0 0 12px rgba(255,31,107,0.4);
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        textarea { height: 130px; resize: vertical; }
+        textarea:focus, .input-field input:focus { outline: none; box-shadow: 0 0 20px rgba(255,31,107,0.4); }
+
+        .buttons, .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 36px;
+            flex-wrap: wrap;
+        }
+
+        .main-btn, .action-btn {
+            min-width: 210px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #FF1F6B;
+            border-radius: 6px;
+            background: transparent;
+            color: #FF1F6B;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .main-btn:disabled, .action-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: grayscale(0.5); }
+        .main-btn:not(:disabled):hover, .action-btn:not(:disabled):hover {
+            background: #FF1F6B; color: #000;
+            box-shadow: 0 0 18px rgba(255,31,107,0.5);
+            transform: translateY(-1px);
+        }
+        .main-btn:not(:disabled):active, .action-btn:not(:disabled):active { transform: translateY(1px); }
+
+        .pairs-mini {
+            display: flex; gap: 18px; justify-content: center; flex-wrap: wrap;
+            font-size: 21px; font-weight: bold; letter-spacing: 3px; margin: 0;
+        }
+        .pairs-mini .pair-chip {
+            border: 2px solid #FF1F6B44; border-radius: 8px;
+            padding: 10px 18px; color: #FF1F6B66; background: #0a0a0a;
+            transition: all 0.3s; min-width: 70px; text-align: center;
+        }
+        .pairs-mini .pair-chip.filled {
+            border-color: #fff; color: #fff; box-shadow: 0 0 12px rgba(255,255,255,0.2);
+        }
+
+        .stage { display: none; width: 100%; max-width: 620px; margin: 0 auto; }
+        .stage.visible { display: block; }
+
+        #stage3 .main-btn { margin-top: 4px; }
+
+        @media (max-width: 900px) {
+            body { padding: 20px 8px 28px; }
+            h1 { font-size: 2rem; }
+            #neuronCanvas { height: 240px; }
+            .buttons, .action-buttons { gap: 20px; }
+            .main-btn, .action-btn { min-width: 170px; font-size: 14px; padding: 12px 18px; }
+            .content-wrapper { gap: 20px; }
+            .pairs-mini { gap: 12px; font-size: 18px; }
+            .pairs-mini .pair-chip { padding: 8px 14px; min-width: 58px; }
+            .nav-chain { gap: 6px; font-size: 12px; margin: 8px 0 6px; }
+        }
+
+        @media (max-width: 500px) {
+            body { padding: 14px 6px 22px; }
+            h1 { font-size: 1.7rem; }
+            #neuronCanvas { height: 190px; }
+            .buttons, .action-buttons { gap: 14px; }
+            .main-btn, .action-btn { min-width: 140px; font-size: 13px; padding: 10px 14px; }
+            .content-wrapper { gap: 16px; }
+            .pairs-mini { gap: 8px; font-size: 16px; }
+            .pairs-mini .pair-chip { padding: 6px 10px; min-width: 50px; letter-spacing: 2px; }
+            .nav-chain { gap: 4px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="infoBtn" onclick="toggleInfo()">ⓘ</button>
+
+    <div id="infoModal" onclick="if(event.target===this)toggleInfo()">
+        <div class="modal-box">
+            <h3>i Как работать с V1RU$E</h3>
+            <p><b>Этап 1 — Текст:</b> введите сообщение на русском (или вставьте зашифрованное) и выберите <b>Зашифровать</b> или <b>Расшифровать</b>.</p>
+            <p><b>Этап 2 — Ключ:</b> введите ровно <b>6 заглавных латинских букв</b> (A–Z). Буквы появятся на ключевых пузырьках.</p>
+            <p><b>Этап 3 — Связи:</b> нажмите на один ключевой пузырёк (подсветится), затем на другой — образуется направленная пара <b>K1→K2</b>. Порядок важен. Составьте <b>3 пары</b>. Нажатие на связанный пузырёк разрывает пару. Повторное нажатие на выбранный сбрасывает выбор.</p>
+            <p><b>Пары</b> определяют три раунда каскадного шифрования с независимыми подключами — взлом экспоненциально усложняется.</p>
+            <p><b>Результат:</b> зашифрованное (VRS-...-VIRUS) или расшифрованное сообщение. Кнопка <b>Перевернуть</b> меняет режим с теми же ключом и парами.</p>
+            <p><b>Важно:</b> для дешифровки нужны те же ключ и пары связей, что использовались при шифровании.</p>
+            <button class="modal-close" onclick="toggleInfo()">ПОНЯТНО</button>
+        </div>
+    </div>
+
+    <div class="top-symbol">
+        <img src="icon.png" alt="V1RU$E symbol">
+    </div>
+
+    <h1 class="accent-text">V1RU$E</h1>
+
+    <div class="nav-chain" id="navChain">
+        <span class="step active" data-stage="1">Текст</span><span class="arrow">→</span>
+        <span class="step" data-stage="2">Ключ</span><span class="arrow">→</span>
+        <span class="step" data-stage="3">Связи</span><span class="arrow">→</span>
+        <span class="step" data-stage="4">Результат</span>
+    </div>
+
+    <canvas id="neuronCanvas"></canvas>
+
+    <div class="pairs-mini" id="pairsMini" style="display:none;">
+        <span class="pair-chip" id="chip1">—</span>
+        <span class="pair-chip" id="chip2">—</span>
+        <span class="pair-chip" id="chip3">—</span>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="stage visible" id="stage1">
+            <textarea id="inputText" placeholder="Введите текст для шифрования или зашифрованное сообщение..."></textarea>
+            <div class="buttons">
+                <button class="main-btn" id="btnEncrypt" onclick="startEncrypt()">ЗАШИФРОВАТЬ</button>
+                <button class="main-btn" id="btnDecrypt" onclick="startDecrypt()">РАСШИФРОВАТЬ</button>
+            </div>
+        </div>
+
+        <div class="stage" id="stage2">
+            <div class="input-field">
+                <input id="cipherKey" type="text" placeholder="Введите ключ (6 латинских букв)..." maxlength="6" autocomplete="off">
+            </div>
+            <button class="main-btn" id="btnKeyConfirm" onclick="confirmKey()" disabled>ПРОДОЛЖИТЬ</button>
+        </div>
+
+        <div class="stage" id="stage3">
+            <button class="main-btn" id="btnPairsConfirm" onclick="confirmPairs()" disabled>ЗАВЕРШИТЬ И ОБРАБОТАТЬ</button>
+        </div>
+
+        <div class="stage" id="stage4">
+            <textarea id="outputText" readonly placeholder="Результат появится здесь..."></textarea>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="copyOutput()">КОПИРОВАТЬ</button>
+                <button class="action-btn" onclick="reverseOperation()">ПЕРЕВЕРНУТЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="position:fixed;bottom:10px;right:15px;font-size:11px;color:#FF1F6B;opacity:0.5;font-family:monospace;z-index:999;pointer-events:none;">
+        creator: Sonoman
+    </div>
+
+    <script>
+        // ====================== ТАБЛИЦА ЗАМЕН ======================
+        const baseMap = {
+            'А':['A','2','@'],'Б':['B','6','₿'],'В':['V','√'],'Г':['G'],'Д':['D'],'Е':['E','9'],
+            'Ё':['E','9'],'Ж':['#'],'З':['Z'],'И':['I','1'],'Й':['J'],'К':['K'],'Л':['L','£'],
+            'М':['M','8','&'],'Н':['N'],'О':['O','0','°'],'П':['P'],'Р':['R','₽'],'С':['S','$','7'],
+            'Т':['T'],'У':['U','Y','¥'],'Ф':['F','§'],'Х':['H','X'],'Ц':['C','¢'],'Ч':['4'],
+            'Ш':['W'],'Щ':['Щ'],'Ъ':['"'],'Ы':['Ы'],'Ь':["'"],'Э':['3','€'],'Ю':['Ю'],'Я':['Я','!']
+        };
+        const allBaseSymbols=new Set();Object.values(baseMap).forEach(v=>v.forEach(s=>allBaseSymbols.add(s)));
+        const uniqueBaseSymbols=Array.from(allBaseSymbols);
+
+        function seededShuffle(arr,seedStr){
+            let seed=0;for(let i=0;i<seedStr.length;i++)seed=(seed*31+seedStr.charCodeAt(i))%2147483647;
+            let s=[...arr];for(let i=s.length-1;i>0;i--){seed=(seed*9301+49297)%233280;const j=Math.floor((seed/233280)*(i+1));[s[i],s[j]]=[s[j],s[i]];}
+            return s;
+        }
+        function getMapForKey(keyInput){
+            const k=(keyInput||'').toUpperCase().trim();let mapCopy=JSON.parse(JSON.stringify(baseMap));
+            if(k==='VIRUSE'||k===''){if(mapCopy['Ё'])delete mapCopy['Ё'];return mapCopy;}
+            let order=[...uniqueBaseSymbols];for(let i=0;i<k.length;i++)order=seededShuffle(order,k[i]+'_'+i+'_'+k);
+            const sub={};uniqueBaseSymbols.forEach((s,i)=>sub[s]=order[i]);
+            const mod={};for(let l in mapCopy)mod[l]=mapCopy[l].map(o=>sub[o]||o);if(mod['Ё'])delete mod['Ё'];return mod;
+        }
+        function buildReverseMap(m){const r={};for(let l in m)m[l].forEach(v=>{if(!r[v])r[v]=l;});return r;}
+        function getCascadeConfig(masterKey,pairs){
+            const map=getMapForKey(masterKey);let cur=JSON.parse(JSON.stringify(map));
+            for(const[a,b]of pairs){
+                const subkey=masterKey[a]+masterKey[b]+masterKey;
+                const sh=seededShuffle([...uniqueBaseSymbols],subkey);
+                const sub={};uniqueBaseSymbols.forEach((s,i)=>sub[s]=sh[i]);
+                const rm={};for(let l in cur)rm[l]=cur[l].map(o=>sub[o]||o);cur=JSON.parse(JSON.stringify(rm));
+            }
+            return{masterKey,pairs,finalMap:cur,reverse:buildReverseMap(cur),multi:new Set(Object.keys(cur).filter(l=>cur[l].length>=2))};
+        }
+        function isValidKey(k){const c=(k||'').trim().toUpperCase();return c===''||c==='VIRUSE'||/^[A-Z]{6}$/.test(c);}
+
+        function encryptText(text,config){
+            const tokens=text.split(/(\s+)/);
+            const p=tokens.map(token=>{
+                if(/^\s+$/.test(token))return token;
+                let w=token.toUpperCase(),punct='';
+                const m=w.match(/([!?.:,;—]+)$/);if(m){punct='*';w=w.slice(0,-m[0].length);}
+                if(!/[А-ЯЁ]/.test(w))return token;
+                let enc='',dup=false;const map=config.finalMap;
+                for(let i=0;i<w.length;i++){let c=w[i];if(c==='Ё')c='Е';const vars=map[c]||[c];const sel=vars[i%vars.length];
+                    if(vars.length>=2&&!dup&&Math.random()<0.15){const rpt=Math.floor(Math.random()*3)+2;for(let r=0;r<rpt;r++)enc+=sel;dup=true;}
+                    else enc+=sel;}
+                enc=enc.split('').reverse().join('');return enc+punct;
+            });
+            return'VRS-'+p.join('')+'-VIRUS';
+        }
+        function decryptText(cipher,config){
+            const input=cipher.trim();if(!input.startsWith('VRS-')||!input.endsWith('-VIRUS'))throw new Error('Неверный формат шифра.');
+            let cleaned=input.slice(4,-6);const tokens=cleaned.split(/(\s+)/);
+            const p=tokens.map(token=>{
+                if(/^\s+$/.test(token))return token;
+                let enc=token,punct='';if(token.endsWith('*')){punct='.';enc=token.slice(0,-1);}
+                const ord=enc.split('').reverse().join('');let dec='',prev=null;
+                for(let c of ord){const l=config.reverse[c]||c;if(prev===c&&config.multi.has(l)){prev=c;continue;}dec+=l;prev=c;}
+                return dec+punct;
+            });
+            return p.join('');
+        }
+
+        // ====================== СОСТОЯНИЕ ======================
+        let currentStage=1,operationMode=null,masterKey='',selectedBubble=null,pairs=[],pairOrder=[];
+
+        function goToStage(stage){
+            document.querySelectorAll('.stage').forEach(s=>s.classList.remove('visible'));
+            document.getElementById('stage'+stage).classList.add('visible');
+            document.querySelectorAll('#navChain .step').forEach(s=>{
+                const ss=parseInt(s.dataset.stage);s.classList.remove('active','done');
+                if(ss<stage)s.classList.add('done');if(ss===stage)s.classList.add('active');
+            });
+            currentStage=stage;
+            const mini=document.getElementById('pairsMini');
+            mini.style.display=(stage===3||stage===4)?'flex':'none';
+            if(stage===3){updatePairsDisplay();setKeyBubblesInteractive(true);}
+            else setKeyBubblesInteractive(false);
+            if(stage===2)document.getElementById('cipherKey').focus();
+        }
+        document.getElementById('navChain').addEventListener('click',function(e){
+            const step=e.target.closest('.step');if(!step)return;
+            const ts=parseInt(step.dataset.stage);if(step.classList.contains('done')&&ts<currentStage)goToStage(ts);
+        });
+
+        function toggleInfo(){document.getElementById('infoModal').classList.toggle('open');}
+
+        function startEncrypt(){
+            const t=document.getElementById('inputText').value.trim();if(!t){alert('Введите текст.');return;}
+            operationMode='encrypt';goToStage(2);document.getElementById('cipherKey').value='';masterKey='';updateKeyLetters();document.getElementById('btnKeyConfirm').disabled=true;
+        }
+        function startDecrypt(){
+            const t=document.getElementById('inputText').value.trim();if(!t){alert('Введите сообщение.');return;}
+            if(!t.startsWith('VRS-')||!t.endsWith('-VIRUS')){alert('Формат: VRS-...-VIRUS');return;}
+            operationMode='decrypt';goToStage(2);document.getElementById('cipherKey').value='';masterKey='';updateKeyLetters();document.getElementById('btnKeyConfirm').disabled=true;
+        }
+
+        document.getElementById('cipherKey').addEventListener('input',function(){
+            const k=this.value.toUpperCase().replace(/[^A-Z]/g,'');this.value=k;
+            document.getElementById('btnKeyConfirm').disabled=k.length!==6;masterKey=k;updateKeyLetters();
+        });
+        function confirmKey(){
+            const k=document.getElementById('cipherKey').value.trim().toUpperCase();
+            if(k.length!==6||!isValidKey(k)){alert('Введите 6 латинских букв.');return;}
+            masterKey=k;pairs=[];pairOrder=[];selectedBubble=null;updatePairsDisplay();goToStage(3);
+        }
+
+        // ====================== НЕЙРОСИМУЛЯЦИЯ ======================
+        const canvas=document.getElementById('neuronCanvas'),ctx=canvas.getContext('2d');
+        const REG=21,KEY=6,REG_R=10,KEY_R_SMALL=10,KEY_R_BIG=16;
+        const KEY_REPEL_DIST=70; // минимальная дистанция между центрами ключевых пузырьков
+        let allBubbles=[],activeConnections=[],mouseX=-100,mouseY=-100,animId=null,lastFrameTime=0;
+        let keyInteractive=false,targetKeyRadius=KEY_R_SMALL;
+
+        function setKeyBubblesInteractive(v){keyInteractive=v;targetKeyRadius=v?KEY_R_BIG:KEY_R_SMALL;}
+        function lerp(a,b,t){return a+(b-a)*t;}
+
+        function initAllBubbles(){
+            const rect=canvas.getBoundingClientRect();
+            const dpr=Math.min(devicePixelRatio||1,2);const w=rect.width,h=rect.height;
+            if(canvas.width!==w*dpr||canvas.height!==h*dpr){
+                canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);
+            }
+            const oldBubbles=allBubbles;allBubbles=[];
+            const rMarg=REG_R+18;const kMarg=Math.max(REG_R,KEY_R_BIG)+22;
+            const uW=w-rMarg*2,uH=h-rMarg*2,cols=7,rows=3,cellW=uW/cols,cellH=uH/rows;
+            const maxER=Math.min(cellW,cellH)*0.6;
+            const pos=[];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)pos.push({r,c});
+            for(let i=pos.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pos[i],pos[j]]=[pos[j],pos[i]];}
+            const sel=pos.slice(0,REG);
+            for(const p of sel){
+                const cx=rMarg+p.c*cellW+cellW*0.5+(Math.random()-0.5)*cellW*0.6;
+                const cy=rMarg+p.r*cellH+cellH*0.5+(Math.random()-0.5)*cellH*0.6;
+                const rx=15+Math.random()*Math.max(10,Math.min(cx-rMarg,w-rMarg-cx,maxER)-15);
+                const ry=15+Math.random()*Math.max(10,Math.min(cy-rMarg,h-rMarg-cy,maxER)-15);
+                allBubbles.push({type:'regular',centreX:cx,centreY:cy,radiusX:rx,radiusY:ry,angle:Math.random()*Math.PI*2,speed:0.002+Math.random()*0.007,phase:Math.random()*Math.PI*2,letter:'',keyIndex:-1,currentRadius:REG_R});
+            }
+            // Ключевые пузырьки с гарантированным разносом
+            const kW=w-kMarg*2,kH=h-kMarg*2,kCols=3,kRows=2,kCellW=kW/kCols,kCellH=kH/kRows;
+            const kMaxR=Math.min(kCellW,kCellH)*0.5;
+            const keyPositions=[];
+            for(let i=0;i<KEY;i++){
+                const row=Math.floor(i/kCols),col=i%kCols;
+                let cx=kMarg+col*kCellW+kCellW*0.5+(Math.random()-0.5)*kCellW*0.5;
+                let cy=kMarg+row*kCellH+kCellH*0.5+(Math.random()-0.5)*kCellH*0.5;
+                // Отталкивание от уже размещённых ключевых
+                let attempts=0;
+                while(attempts<20){
+                    let tooClose=false;
+                    for(const kp of keyPositions){
+                        const dx=cx-kp.cx,dy=cy-kp.cy;if(Math.sqrt(dx*dx+dy*dy)<KEY_REPEL_DIST){tooClose=true;break;}
+                    }
+                    if(!tooClose)break;
+                    cx=kMarg+col*kCellW+kCellW*0.5+(Math.random()-0.5)*kCellW*0.7;
+                    cy=kMarg+row*kCellH+kCellH*0.5+(Math.random()-0.5)*kCellH*0.7;
+                    attempts++;
+                }
+                keyPositions.push({cx,cy});
+                const rx=20+Math.random()*Math.max(15,Math.min(cx-kMarg,w-kMarg-cx,kMaxR)-20);
+                const ry=20+Math.random()*Math.max(15,Math.min(cy-kMarg,h-kMarg-cy,kMaxR)-20);
+                const old=oldBubbles.find(b=>b.type==='key'&&b.keyIndex===i);
+                allBubbles.push({type:'key',keyIndex:i,centreX:old?old.centreX:cx,centreY:old?old.centreY:cy,radiusX:rx,radiusY:ry,angle:old?old.angle:Math.random()*Math.PI*2,speed:0.0015+Math.random()*0.005,phase:Math.random()*Math.PI*2,letter:masterKey[i]||'',currentRadius:old?old.currentRadius:KEY_R_SMALL});
+            }
+        }
+
+        function updateKeyLetters(){for(const b of allBubbles){if(b.type==='key')b.letter=masterKey[b.keyIndex]||'';}}
+
+        function updateBubbles(width,height,time){
+            // Сначала обновляем позиции
+            for(const b of allBubbles){
+                b.angle+=b.speed;if(b.angle>Math.PI*2)b.angle-=Math.PI*2;
+                b.x=b.centreX+b.radiusX*Math.cos(b.angle);
+                b.y=b.centreY+b.radiusY*Math.sin(b.angle);
+                const tr=b.type==='key'?targetKeyRadius:REG_R;
+                b.currentRadius=lerp(b.currentRadius,tr,0.08);
+                const m=b.currentRadius+2;
+                b.x=Math.max(m,Math.min(width-m,b.x));
+                b.y=Math.max(m,Math.min(height-m,b.y));
+            }
+          
+            const keyBubbles=allBubbles.filter(b=>b.type==='key'&&b.x&&b.y);
+            for(let i=0;i<keyBubbles.length;i++){
+                for(let j=i+1;j<keyBubbles.length;j++){
+                    const a=keyBubbles[i],b=keyBubbles[j];
+                    const dx=b.x-a.x,dy=b.y-a.y,dist=Math.sqrt(dx*dx+dy*dy);
+                    if(dist<KEY_REPEL_DIST&&dist>0.01){
+                        const overlap=KEY_REPEL_DIST-dist;
+                        const nx=dx/dist,ny=dy/dist;
+                        const push=overlap*0.5;
+                        a.x-=nx*push;a.y-=ny*push;
+                        b.x+=nx*push;b.y+=ny*push;
+                        const m_a=a.currentRadius+2,m_b=b.currentRadius+2;
+                        a.x=Math.max(m_a,Math.min(width-m_a,a.x));
+                        a.y=Math.max(m_a,Math.min(height-m_a,a.y));
+                        b.x=Math.max(m_b,Math.min(width-m_b,b.x));
+                        b.y=Math.max(m_b,Math.min(height-m_b,b.y));
+                    }
+                }
+            }
+        }
+
+        function updateConnections(time){
+            for(let i=activeConnections.length-1;i>=0;i--){
+                const c=activeConnections[i];c.opacity-=0.005;if(Math.random()<0.0017)c.opacity-=0.2;if(c.opacity<=0)activeConnections.splice(i,1);
+            }
+            for(let i=0;i<allBubbles.length;i++){
+                for(let j=i+1;j<allBubbles.length;j++){
+                    const a=allBubbles[i],b=allBubbles[j];if(!a.x||!b.x)continue;
+                    const dx=a.x-b.x,dy=a.y-b.y,dist=Math.sqrt(dx*dx+dy*dy);
+                    const isK=a.type==='key'||b.type==='key',thresh=isK?200:160;
+                    if(dist<thresh){
+                        const ex=activeConnections.find(c=>(c.from===i&&c.to===j)||(c.from===j&&c.to===i));
+                        const mult=isK?1.4:1,mx=0.22*mult*(1-dist/thresh);
+                        if(!ex)activeConnections.push({from:i,to:j,opacity:mx*0.4,maxOpacity:mx});
+                        else if(ex.opacity<ex.maxOpacity)ex.opacity=Math.min(ex.maxOpacity,ex.opacity+0.01);
+                    }
+                }
+            }
+            if(activeConnections.length>80){activeConnections.sort((a,b)=>a.opacity-b.opacity);activeConnections.splice(0,activeConnections.length-80);}
+        }
+
+        function getBubblePairIndex(b){if(!keyInteractive||b.type!=='key')return-1;for(let i=0;i<pairs.length;i++){if(pairs[i][0]===b.keyIndex||pairs[i][1]===b.keyIndex)return i;}return-1;}
+
+        function drawCanvas(width,height,time){
+            ctx.clearRect(0,0,width,height);
+            for(const c of activeConnections){
+                const a=allBubbles[c.from],b=allBubbles[c.to];if(!a||!b||!a.x||!b.x)continue;
+                const op=Math.max(0,Math.min(1,c.opacity)),ik=a.type==='key'||b.type==='key';
+                ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+                ctx.strokeStyle='#FF1F6B';ctx.globalAlpha=op;ctx.lineWidth=ik?1.8:1;ctx.stroke();ctx.globalAlpha=1;
+            }
+            if(keyInteractive){
+                for(let pi=0;pi<pairs.length;pi++){
+                    const[ka,kb]=pairs[pi],bA=allBubbles.find(b=>b.type==='key'&&b.keyIndex===ka),bB=allBubbles.find(b=>b.type==='key'&&b.keyIndex===kb);
+                    if(!bA||!bB||!bA.x||!bB.x)continue;
+                    const pulse=0.5+0.5*Math.sin(time*0.004+pi);
+                    ctx.beginPath();ctx.moveTo(bA.x,bA.y);ctx.lineTo(bB.x,bB.y);
+                    ctx.strokeStyle='#fff';ctx.globalAlpha=0.5+pulse*0.4;ctx.lineWidth=2.5;ctx.stroke();ctx.globalAlpha=1;
+                    const t=((time*0.001)%2)/2;
+                    ctx.beginPath();ctx.arc(bA.x+(bB.x-bA.x)*t,bA.y+(bB.y-bA.y)*t,4,0,Math.PI*2);
+                    ctx.fillStyle='#fff';ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+                }
+                if(selectedBubble!==null){
+                    const sel=allBubbles.find(b=>b.type==='key'&&b.keyIndex===selectedBubble);
+                    if(sel&&sel.x){
+                        ctx.beginPath();ctx.moveTo(sel.x,sel.y);ctx.lineTo(mouseX,mouseY);
+                        ctx.strokeStyle='#fff';ctx.globalAlpha=0.4;ctx.lineWidth=1.5;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+                    }
+                }
+            }
+            for(const b of allBubbles){
+                if(!b.x||!b.y)continue;const r=b.currentRadius||REG_R;
+                const pIdx=getBubblePairIndex(b),isP=pIdx>=0,isSel=keyInteractive&&b.type==='key'&&selectedBubble===b.keyIndex,isFirst=isP&&pairs[pIdx][0]===b.keyIndex;
+                let col='#FF1F6B',alpha=b.type==='key'?0.65:0.5;
+                if(isP){col='#fff';alpha=isFirst?0.85:0.55;}if(isSel){alpha=0.95;col='#fff';}
+                const grad=ctx.createRadialGradient(b.x-2,b.y-2,r*0.15,b.x,b.y,r);
+                grad.addColorStop(0,col);grad.addColorStop(1,'rgba(255,31,107,0)');
+                ctx.beginPath();ctx.arc(b.x,b.y,r,0,Math.PI*2);ctx.fillStyle=grad;ctx.globalAlpha=alpha;ctx.fill();
+                const gR=r+5,gA=isP?0.15+Math.sin(time*0.0015+b.phase)*0.06:0.05+Math.sin(time*0.0015+b.phase)*0.025;
+                ctx.beginPath();ctx.arc(b.x,b.y,gR,0,Math.PI*2);ctx.fillStyle=col;ctx.globalAlpha=gA;ctx.fill();
+                ctx.beginPath();ctx.arc(b.x,b.y,r*0.28,0,Math.PI*2);ctx.fillStyle=col;ctx.globalAlpha=b.type==='key'?0.75:0.6;ctx.fill();
+                if(isP){ctx.beginPath();ctx.arc(b.x,b.y,r+3,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.globalAlpha=0.7;ctx.lineWidth=3;ctx.stroke();}
+                if(b.type==='key'&&b.letter){
+                    ctx.globalAlpha=0.9;ctx.fillStyle='#000';ctx.font=`bold ${r*1.0}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+                    ctx.fillText(b.letter,b.x,b.y+0.5);ctx.globalAlpha=0.3;ctx.strokeStyle=col;ctx.lineWidth=0.5;ctx.strokeText(b.letter,b.x,b.y+0.5);
+                }
+                ctx.globalAlpha=1;
+            }
+        }
+
+        function animLoop(ts){
+            animId=requestAnimationFrame(animLoop);const d=ts-lastFrameTime;if(d<33.33)return;lastFrameTime=ts-(d%33.33);
+            const w=canvas.clientWidth,h=canvas.clientHeight;updateBubbles(w,h,ts);updateConnections(ts);drawCanvas(w,h,ts);
+        }
+        function startAnim(){if(allBubbles.length===0)initAllBubbles();if(!animId){lastFrameTime=performance.now();animId=requestAnimationFrame(animLoop);}}
+        function stopAnim(){if(animId){cancelAnimationFrame(animId);animId=null;}}
+
+        canvas.addEventListener('click',function(e){
+            if(!keyInteractive)return;
+            const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+            const kb=allBubbles.filter(b=>b.type==='key'&&b.x&&b.y);
+            let cl=null;
+            for(const b of kb){const dx=x-b.x,dy=y-b.y;if(Math.sqrt(dx*dx+dy*dy)<KEY_R_BIG+22){cl=b;break;}}
+            if(!cl){selectedBubble=null;return;}
+            const pi=getBubblePairIndex(cl);
+            if(pi>=0){pairs.splice(pi,1);pairOrder=pairOrder.filter(p=>p!==pi).map(p=>p>pi?p-1:p);selectedBubble=null;updatePairsDisplay();return;}
+            if(selectedBubble===null){if(pairs.length>=3)return;selectedBubble=cl.keyIndex;}
+            else if(selectedBubble===cl.keyIndex)selectedBubble=null;
+            else{pairs.push([selectedBubble,cl.keyIndex]);pairOrder.push(pairs.length-1);selectedBubble=null;updatePairsDisplay();}
+        });
+        canvas.addEventListener('mousemove',function(e){const r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;});
+        canvas.addEventListener('mouseleave',function(){mouseX=-100;mouseY=-100;});
+        document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAnim();else startAnim();});
+        window.addEventListener('resize',()=>{initAllBubbles();});
+
+        function updatePairsDisplay(){
+            for(let pi=0;pi<3;pi++){
+                const chip=document.getElementById('chip'+(pi+1));
+                if(pi<pairs.length){const[a,b]=pairs[pi];chip.textContent=masterKey[a]+' '+masterKey[b];chip.classList.add('filled');}
+                else{chip.textContent='—';chip.classList.remove('filled');}
+            }
+            document.getElementById('btnPairsConfirm').disabled=pairs.length!==3;
+        }
+        function confirmPairs(){if(pairs.length!==3)return;processOperation();}
+
+        function processOperation(){
+            const inputText=document.getElementById('inputText').value.trim();
+            try{
+                const config=getCascadeConfig(masterKey,pairs);
+                document.getElementById('outputText').value=operationMode==='encrypt'?encryptText(inputText,config):decryptText(inputText,config);
+                goToStage(4);updatePairsDisplay();
+            }catch(err){alert('Ошибка: '+err.message);document.getElementById('outputText').value='Ошибка.';goToStage(4);}
+        }
+        function copyOutput(){
+            const o=document.getElementById('outputText');if(!o.value)return;
+            navigator.clipboard.writeText(o.value).catch(()=>{o.select();document.execCommand('copy');});
+        }
+        function reverseOperation(){
+            const o=document.getElementById('outputText').value.trim();if(!o)return;
+            document.getElementById('inputText').value=o;document.getElementById('cipherKey').value=masterKey;
+            operationMode=operationMode==='encrypt'?'decrypt':'encrypt';processOperation();
+        }
+
+        startAnim();
+    </script>
+</body>
+                 </html>
